@@ -3,6 +3,7 @@ package com.android.tbservice;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
@@ -10,7 +11,17 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class FloatingLogService extends Service {
 
@@ -27,6 +38,12 @@ public class FloatingLogService extends Service {
     private int initialY;
     private float initialTouchX;
     private float initialTouchY;
+
+    private ArrayList<String> logMessages = new ArrayList<>();
+
+    private Logger logger;
+
+    private int listernerId;
 
     public FloatingLogService() {
     }
@@ -46,7 +63,16 @@ public class FloatingLogService extends Service {
         // 创建悬浮日志列表的视图
         logListView = LayoutInflater.from(this).inflate(R.layout.floating_log_list_layout, null);
 
-        TextView floating_ball = floatingBall.findViewById(R.id.floating_ball);
+        ImageView floating_ball = floatingBall.findViewById(R.id.floating_ball);
+
+        RecyclerView recyclerView = logListView.findViewById(R.id.log_recycler_view);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        LogAdapter adapter = new LogAdapter(logMessages);
+        recyclerView.setAdapter(adapter);
+
+        Button startBtn = logListView.findViewById(R.id.start);
+        Button stopBtn = logListView.findViewById(R.id.stop);
+
         // 配置悬浮球的参数
         ballParams = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -81,6 +107,16 @@ public class FloatingLogService extends Service {
         // 将悬浮球的视图添加到 WindowManager
         windowManager.addView(floatingBall, ballParams);
 
+        logger = new Logger();
+
+        listernerId = Logger.registerListener(new Logger.OnLogUpdateListener() {
+            @Override
+            public void onLogAdded(String log) {
+                adapter.addLog(log);
+                recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+            }
+        });
+
         // 悬浮球点击事件
         floating_ball.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -94,6 +130,20 @@ public class FloatingLogService extends Service {
                     windowManager.addView(logListView, logListParams);
                     isLogListVisible = true;
                 }
+            }
+        });
+
+        startBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                logger.addLog("开始执行");
+            }
+        });
+
+        stopBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                logger.addLog("结束执行");
             }
         });
 
@@ -132,6 +182,8 @@ public class FloatingLogService extends Service {
         if (logListView != null) {
             windowManager.removeView(logListView);
         }
+
+        Logger.unregisterListener(listernerId);
     }
 
     private DisplayMetrics getWindow() {

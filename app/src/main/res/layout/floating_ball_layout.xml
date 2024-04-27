@@ -2,9 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
-    <TextView
+    <ImageView
         android:id="@+id/floating_ball"
-        android:layout_width="wrap_content"
-        android:text="悬浮球"
-        android:layout_height="wrap_content"/>
+        android:src="@drawable/icon"
+        android:layout_width="30dp"
+        android:layout_height="30dp"/>
 </LinearLayout>
